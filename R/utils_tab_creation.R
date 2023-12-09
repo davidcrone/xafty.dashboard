@@ -58,15 +58,15 @@ create_rules_cards <- function(ns, xafty_list, tab_name) {
     }
 
     bslib::card(
-      bslib::card_header(class = header_class,
+      bslib::card_header(id = ns(paste0("card_header_", xafty_rule,"_", tab_name)),
+                         class = header_class,
                          paste0("Card for Rule: ", xafty_rule)
                          ),
       bslib::card_body(
         shiny::actionButton(ns(paste0("check_", xafty_rule,"_", tab_name)), label = paste0("Test for ", xafty_rule)),
-        shiny::uiOutput(ns(paste0("message_", xafty_rule,"_", tab_name))),
         shiny::uiOutput(ns(paste0("table_", xafty_rule,"_", tab_name)))
       )
-    )
+    , full_screen = TRUE)
 
   })
 

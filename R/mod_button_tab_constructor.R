@@ -126,8 +126,8 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
       xafty_columns <- rval_xafty_list$check_table_ids
 
       xafty_rules_ids <- paste0("check_", xaft_rules, "_", xafty_columns)
-      xafty_message_ids <- paste0("message_", xaft_rules, "_", xafty_columns)
       xafty_table_ids <- paste0("table_", xaft_rules, "_", xafty_columns)
+      xafty_card_header_ids <- paste0("card_header_", xaft_rules,"_", xafty_columns)
 
       n_buttons <- length(xafty_rules_ids)
 
@@ -139,9 +139,9 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
           local_i <- i
           xafty_button_id <- xafty_rules_ids[[local_i]]
-          xafty_ui_output_id <- xafty_message_ids[[local_i]]
           rhandsontabe_id <- xafty_table_ids[[local_i]]
           render_handsontable_id <- paste0("r_", rhandsontabe_id)
+          xafty_card_header_id <- xafty_card_header_ids[[local_i]]
 
           xafty_column <- xafty_columns[[local_i]]
           xafty_rule <- xaft_rules[[local_i]]
@@ -151,9 +151,9 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
           xafty_list_values[["unique_id"]] <- unique_id
           xafty_list_values[["xafty_button_id"]] <- xafty_button_id
-          xafty_list_values[["xafty_ui_output_id"]] <- xafty_ui_output_id
           xafty_list_values[["rhandsontabe_id"]] <- rhandsontabe_id
           xafty_list_values[["render_handsontable_id"]] <- render_handsontable_id
+          xafty_list_values[["xafty_card_header_id"]] <- xafty_card_header_id
 
           rval_sm[[unique_id]] <- xafty_list_values
 
@@ -182,8 +182,8 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
           xafty_items <- rval_sm[[local_unique_id]]
           xafty_button_id <- xafty_items[["xafty_button_id"]]
-          xafty_ui_output_id <- xafty_items[["xafty_ui_output_id"]]
           render_handsontable_id <- xafty_items[["render_handsontable_id"]]
+          xafty_card_header_id <- xafty_items[["xafty_card_header_id"]]
 
           observeEvent(input[[xafty_button_id]], {
             # Now, local_i is the value of i during this iteration of the loop
@@ -205,9 +205,34 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
            }
 
+            single_col_check_table <- check_table[xafty_rule_items$column_name]
+            new_test_result <- xafty_rule_items$check_function(single_col_check_table, validity_table)
+            rval_sm[[local_unique_id]]$test_result <- new_test_result$Check_Result
+
             if (!any(xafty_rule_items$filter_result)) {
 
-              output[[xafty_ui_output_id]] <- shiny::renderUI(p("ALL GOOD"))
+              shinyjs::removeClass(id = xafty_card_header_id, class = "bg-danger")
+              shinyjs::addClass(id = xafty_card_header_id, class = "bg-success")
+
+              shinyjs::hide(id = render_handsontable_id, anim = TRUE, animType = "fade", time = 0.5)
+
+              xafty_list <- xafty_list()
+              xafty_rules <- names(xafty_list[[xafty_rule_items$column_name]])
+              unique_id <- paste0(xafty_rule_items$column_name, xafty_rules)
+
+              test_result_all_rules <-  sapply(unique_id, \(x){
+                rval_sm[[x]]$test_result
+              })
+
+              if(all(test_result_all_rules)) {
+
+                xafty_button_id <- paste0(xafty_rule_items$column_name, "_xafty_button")
+
+                shinyjs::removeClass(id = xafty_button_id, class = "btn-danger")
+                shinyjs::addClass(id = xafty_button_id, class = "bg-success")
+
+              }
+
             } else {
 
               check_result_logical <- xafty_rule_items$filter_function(check_table, validity_table = validity_table,

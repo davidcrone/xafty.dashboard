@@ -15,6 +15,7 @@ Imports:
     htmltools,
     rhandsontable,
     shiny (>= 1.7.5),
+    shinyjs,
     xafty
 Encoding: UTF-8
 LazyData: true
