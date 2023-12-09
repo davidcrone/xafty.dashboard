@@ -17,7 +17,8 @@ app_ui <- function(request) {
         shiny::sidebarPanel(width = 3,
           shiny::h1("Excel Checker"),
           shiny::fileInput("input_check_table_main", label = "Upload File to Check", accept = ".csv"),
-          shiny::fileInput("input_validity_table_main", label = "Upload File to Validate", accept = ".csv")
+          shiny::fileInput("input_validity_table_main", label = "Upload File to Validate", accept = ".csv"),
+          shiny::downloadButton("download_check_table", label = "Download Repaired Table")
                      ),
         shiny::mainPanel(
           div(style = "height: 50px;"),

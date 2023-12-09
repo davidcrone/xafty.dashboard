@@ -152,6 +152,7 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
           xafty_list_values[["unique_id"]] <- unique_id
           xafty_list_values[["xafty_button_id"]] <- xafty_button_id
           xafty_list_values[["xafty_ui_output_id"]] <- xafty_ui_output_id
+          xafty_list_values[["rhandsontabe_id"]] <- rhandsontabe_id
           xafty_list_values[["render_handsontable_id"]] <- render_handsontable_id
 
           rval_sm[[unique_id]] <- xafty_list_values
@@ -187,14 +188,26 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
           observeEvent(input[[xafty_button_id]], {
             # Now, local_i is the value of i during this iteration of the loop
 
-
             check_table <- rval_xafty_list$check_table
             validity_table <- rval_xafty_list$validity_table
             xafty_rule_items <- rval_sm[[local_unique_id]]
 
+           if (xafty_rule_items$rule_type == "data_type") {
+             values_check_table <- check_table[, xafty_rule_items$column_name]
+             changed_values_check_table <- xafty_rule_items$change_type_function(values_check_table)
+
+             if (identical(values_check_table, as.character(changed_values_check_table))) {
+
+               check_table[[xafty_rule_items$column_name]] <- changed_values_check_table
+               xafty_rule_items$filter_result <- rep(FALSE, length(changed_values_check_table))
+
+             }
+
+           }
+
             if (!any(xafty_rule_items$filter_result)) {
 
-              output[[xafty_ui_output_id]] <- shiny::renderUI(p(xafty_rule_items$message))
+              output[[xafty_ui_output_id]] <- shiny::renderUI(p("ALL GOOD"))
             } else {
 
               check_result_logical <- xafty_rule_items$filter_function(check_table, validity_table = validity_table,
@@ -210,27 +223,32 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
               row_highlight <- which(check_result_logical) - 1
               col_highlight <- which(colnames(check_table) == xafty_rule_items$column_name) - 1
 
+              js_row_highlight <- paste0(row_highlight, collapse = ",")
+              js_row_highlight <- paste0("[", js_row_highlight, "]")
+
+              js_col_highlight <- paste0(col_highlight, collapse = ",")
+              js_col_highlight <- paste0("[", col_highlight, "]")
+
+
               output[[render_handsontable_id]] <-  rhandsontable::renderRHandsontable({
 
-                rhandsontable::rhandsontable(check_table, col_highlight = col_highlight,
-                                            row_highlight = row_highlight) # |>
-                  # rhandsontable::hot_cols(renderer = "
-                  #         function(instance, td, row, col, prop, value, cellProperties) {
-                  #         Handsontable.renderers.TextRenderer.apply(this, arguments);
-                  #
-                  #         tbl = this.HTMLWidgets.widgets[0]
-                  #
-                  #         hcols = tbl.params.col_highlight
-                  #         hcols = hcols instanceof Array ? hcols : [hcols]
-                  #         hrows = tbl.params.row_highlight
-                  #         hrows = hrows instanceof Array ? hrows : [hrows]
-                  #
-                  #         if (hcols.includes(col) && hrows.includes(row)) {
-                  #           td.style.background = 'pink';
-                  #         }
-                  #
-                  #         return td;
-                  #       }")
+                rhandsontable::rhandsontable(check_table) |>
+                                            rhandsontable::hot_cols(renderer = paste0("
+                          function(instance, td, row, col, prop, value, cellProperties) {
+                          Handsontable.renderers.TextRenderer.apply(this, arguments);
+
+                          tbl = this.HTMLWidgets.widgets[0]
+
+                          hcols = ", js_col_highlight, "
+                          hrows = ", js_row_highlight,"
+
+                          if (hcols.includes(col) && hrows.includes(row)) {
+                            td.style.background = 'pink';
+                          }
+
+                          return td;
+                        }")) # |>
+
               })
 
 

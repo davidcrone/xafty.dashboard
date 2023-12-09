@@ -55,4 +55,11 @@ app_server <- function(input, output, session) {
 
   mod_button_tab_constructor_server("button_tab_constructor_1", xafty_list = xafty_list, rval_xafty_list = rval_xafty_list)
 
+  output$download_check_table <- shiny::downloadHandler(
+      filename = paste0("check_table_repaired.csv"),
+      content = function(file) {
+        write.csv(rval_xafty_list$check_table, file, row.names = FALSE)
+      }
+  )
+
 }
