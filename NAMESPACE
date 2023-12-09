@@ -2,6 +2,10 @@
 
 export(run_app)
 import(shiny)
+importFrom(bslib,bs_theme)
+importFrom(bslib,card)
+importFrom(bslib,card_body)
+importFrom(bslib,card_header)
 importFrom(golem,activate_js)
 importFrom(golem,add_resource_path)
 importFrom(golem,bundle_resources)
