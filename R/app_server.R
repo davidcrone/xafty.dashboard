@@ -18,6 +18,8 @@ app_server <- function(input, output, session) {
     check_table_ids = NULL # For Creating UI
   )
 
+  rval_xafty_master <- shiny::reactiveValues()
+
   check_table <- shiny::reactive({
 
     check_table_input <- input$input_check_table_main
@@ -50,10 +52,40 @@ app_server <- function(input, output, session) {
 
     rval_xafty_list$check_table <- check_table()
     rval_xafty_list$validity_table <- validity_table()
-    xafty::build_xafty_list(check_table = check_table(), validity_table = validity_table())
+    xafty_list <- xafty::build_xafty_list(check_table = check_table(), validity_table = validity_table())
+
+    xafty_table <- xafty::build_xafty_test_table(xafty_list)
+
+    rval_xafty_master[["xafty_table"]] <- xafty_table
+
+
+    unique_id_list <- list()
+
+    for (i in seq(nrow(xafty_table))) {
+
+      xafty_column <- xafty_table$column[i]
+      xafty_rule <- sub("##!!", "", xafty_table$rule[i])
+
+      xafty_list_values <- xafty_list[[xafty_column]][[xafty_rule]]
+
+      unique_id <- paste0(xafty_column, xafty_rule)
+
+      rval_xafty_master[[unique_id]] <- xafty_list_values
+
+      unique_id_list[[i]] <- unique_id
+
+    }
+
+    rval_xafty_master[["unique_ids"]] <- do.call(c, unique_id_list)
+
+    xafty_list
+
   })
 
-  mod_button_tab_constructor_server("button_tab_constructor_1", xafty_list = xafty_list, rval_xafty_list = rval_xafty_list)
+  mod_button_tab_constructor_server("button_tab_constructor_1",
+                                    xafty_list = xafty_list,
+                                    rval_xafty_list = rval_xafty_list,
+                                    rval_xafty_master = rval_xafty_master)
 
   output$download_check_table <- shiny::downloadHandler(
       filename = paste0("check_table_repaired.csv"),

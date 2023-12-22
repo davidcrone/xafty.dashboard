@@ -20,42 +20,42 @@ mod_button_tab_constructor_ui <- function(id){
 #'
 #' @noRd
 #' @importFrom shiny reactive
-mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
+mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list, rval_xafty_master){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
 
     rval_sm <- shiny::reactiveValues()
     render_tables_created <- shiny::reactiveVal(FALSE)
 
-    shiny::observe(
-      rval_xafty_list$xafty_names <- names(xafty_list())
-    )
+    shiny::observe({
+      xafty_list_columns <- names(xafty_list())
+      rval_xafty_master[["xafty_list_columns"]] <- xafty_list_columns
+      })
 
     output$xafty_buttons <- shiny::renderUI({
 
-      req(rval_xafty_list$xafty_names)
+      req(rval_xafty_master$xafty_list_columns)
 
-      button_names <- rval_xafty_list$xafty_names
-      xafty_list <- isolate(xafty_list())
+      button_names <- rval_xafty_master$xafty_list_columns
+      xafty_table <- rval_xafty_master$xafty_table
 
-      xafty_test_results <- sapply(button_names, \(column){
-        xafty::get_xafty_list_items(xafty_list = xafty_list, column = column, item = "test_result")
+      test_result_each_column <- sapply(button_names, \(column){
+        all(xafty_table$test_result[xafty_table$column == column])
       })
 
-      all_true_list <- suppressWarnings(lapply(xafty_test_results, all))
-
-      button_id <- sapply(button_names, \(button_name) {
+      xafty_button_ids <- sapply(button_names, \(button_name) {
         paste0(button_name, "_xafty_button")
       })
-      rval_xafty_list$xafty_button_ids <- button_id
 
-      xafty_button_list <- mapply(\(button_name, test_result) {
+      rval_xafty_master[["xafty_button_ids"]] <- xafty_button_ids
+
+      xafty_button_list <- mapply(\(button_id, button_name, test_result) {
         if(test_result) {
-          shiny::actionButton(inputId = ns(paste0(button_name, "_xafty_button")), label = button_name, class = "btn-success fade-in")
+          shiny::actionButton(inputId = ns(button_id), label = button_name, class = "btn-success fade-in")
         } else {
-          shiny::actionButton(inputId = ns(paste0(button_name, "_xafty_button")), label = button_name, class = "btn-danger fade-in")
+          shiny::actionButton(inputId = ns(button_id), label = button_name, class = "btn-danger fade-in")
         }
-      }, button_names, all_true_list, SIMPLIFY = FALSE)
+      }, xafty_button_ids, button_names, test_result_each_column, SIMPLIFY = FALSE)
 
       do.call(tagList, xafty_button_list)
 
@@ -63,20 +63,20 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
     output$xafty_tabs <- shiny::renderUI({
 
-      req(rval_xafty_list$xafty_names)
+      req(rval_xafty_master$xafty_list_columns)
 
       xafty_list <- isolate(xafty_list())
-      xafty_table <- xafty::build_xafty_test_table(xafty_list)
-      tab_names <- rval_xafty_list$xafty_names
 
-      tab_id <- sapply(tab_names, \(tab_name) {
+      xafty_table <- rval_xafty_master$xafty_table
+      tab_names <- rval_xafty_master$xafty_list_columns
+
+      tab_ids <- sapply(tab_names, \(tab_name) {
         paste0(tab_name, "_xafty_tab")
       })
 
-      rval_xafty_list$xafty_tabs_ids <- tab_id
-      rval_xafty_list$xafty_tab_id <- "xafty_tabset"
+      rval_xafty_master[["xafty_tabs_ids"]] <- tab_ids
 
-      rval_xafty_list$check_rules_ids <- sub("##!!", "",xafty_table$rule)
+      rval_xafty_list$check_rules_ids <- sub("##!!", "", xafty_table$rule)
       rval_xafty_list$check_table_ids <- xafty_table$column
 
       xafty_tabs_list <- lapply(tab_names, function(tab_name) {
@@ -88,19 +88,18 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
       })
 
       # Create tabsetPanel without tab titles
-      do.call(tabsetPanel, c(xafty_tabs_list, list(id = ns("xafty_tabset"), type = "hidden", selected = tab_id[[2]],
+      do.call(tabsetPanel, c(xafty_tabs_list, list(id = ns("xafty_tabset"), type = "hidden", selected = tab_ids[[2]],
                                                    header= div(style = "height: 10px;"))))
 
     })
 
-    # Observer to bind events to Buttons
+    # Observer to bind events to Xafty Buttons
     shiny::observe({
 
-      req(rval_xafty_list$xafty_tabs_ids, rval_xafty_list$xafty_tab_id, rval_xafty_list$xafty_button_ids)
+      req(rval_xafty_master$xafty_tabs_ids, rval_xafty_master$xafty_button_ids)
 
-      xafty_tabs_ids <- rval_xafty_list$xafty_tabs_ids
-      xafty_tabset_id <- rval_xafty_list$xafty_tab_id
-      xafty_button_ids <- rval_xafty_list$xafty_button_ids
+      xafty_tabs_ids <- rval_xafty_master$xafty_tabs_ids
+      xafty_button_ids <- rval_xafty_master$xafty_button_ids
 
       n_buttons <- length(xafty_button_ids)
       for (i in seq(n_buttons)) {
@@ -111,7 +110,7 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
           observeEvent(input[[xafty_button_id]], {
             # Now, local_i is the value of i during this iteration of the loop
-            shiny::updateTabsetPanel(session = session, inputId = xafty_tabset_id, selected = xafty_tab_title)
+            shiny::updateTabsetPanel(session = session, inputId = "xafty_tabset", selected = xafty_tab_title)
           })
         })
 
@@ -122,8 +121,10 @@ mod_button_tab_constructor_server <- function(id, xafty_list, rval_xafty_list){
 
       req(rval_xafty_list$check_rules_ids, rval_xafty_list$check_table_ids)
 
-      xaft_rules <- rval_xafty_list$check_rules_ids
-      xafty_columns <- rval_xafty_list$check_table_ids
+      xafty_table <- rval_xafty_master$xafty_table
+
+      xaft_rules <- sub("##!!", "", xafty_table$rule)
+      xafty_columns <- xafty_table$column
 
       xafty_rules_ids <- paste0("check_", xaft_rules, "_", xafty_columns)
       xafty_table_ids <- paste0("table_", xaft_rules, "_", xafty_columns)
