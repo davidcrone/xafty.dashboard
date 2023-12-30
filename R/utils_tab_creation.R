@@ -49,6 +49,8 @@ create_rules_cards <- function(ns, xafty_list, tab_name) {
 
   xafty_cards <- lapply(xafty_rules, \(xafty_rule){
 
+    unique_id <- paste0(tab_name, xafty_rule)
+
     test_result <- xafty_results[[xafty_rule]]
 
     if (test_result) {

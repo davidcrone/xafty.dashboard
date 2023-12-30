@@ -9,13 +9,7 @@ app_server <- function(input, output, session) {
 
   rval_xafty_list <- shiny::reactiveValues(
     check_table = NULL,
-    validity_table = NULL,
-    xafty_names = NULL,
-    xafty_button_ids = NULL,
-    xafty_tab_id = NULL,
-    xafty_tabs_ids = NULL,
-    check_rules_ids = NULL, # For Checking rules with a button
-    check_table_ids = NULL # For Creating UI
+    validity_table = NULL
   )
 
   rval_xafty_master <- shiny::reactiveValues()
