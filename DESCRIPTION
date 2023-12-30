@@ -1,11 +1,11 @@
 Package: xafty.dashboard
 Title: An Amazing Shiny App
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: 
-    person(given = "firstname",
-           family = "lastname",
+    person(given = "David",
+           family = "Crone",
            role = c("aut", "cre"),
-           email = "your@email.com")
+           email = "mr.brightsight.tro@gmail.com")
 Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Imports: 
